@@ -4,13 +4,11 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#ffffff">
-  <meta name="description" content="Offline homework bench.">
   <link rel="icon" href="/icon.svg" type="image/svg+xml">
   <title>Homework Bench</title>
 </head>
 <body>
   <div class="app-layout">
-    <!-- Sidebar -->
     <aside class="sidebar">
       <div class="brand">
         <div class="brand-icon">H</div>
@@ -56,19 +54,22 @@
       </div>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
+      <!-- CHAT -->
       <section id="chat">
-        <div class="chat-container">
+        <div class="chat-wrapper">
           <div class="chat-history" id="chat-history"></div>
-          <div class="chat-input-area">
-            <textarea id="chat-input" placeholder="Ask anything... (Shift+Enter for new line)"></textarea>
-            <button id="chat-send" class="btn-primary">Send</button>
-            <button id="chat-stop" class="btn-danger" hidden>Stop</button>
+          <div class="chat-input-wrapper">
+            <div class="chat-input-box">
+              <textarea id="chat-input" placeholder="Ask anything... (Shift+Enter for new line)" rows="1"></textarea>
+              <button id="chat-send" class="btn-primary">Send</button>
+              <button id="chat-stop" class="btn-danger" hidden>Stop</button>
+            </div>
           </div>
         </div>
       </section>
 
+      <!-- DOCS (Word/PPT editor) -->
       <section id="docs" hidden>
         <div class="page-header">
           <h2>Documents</h2>
@@ -82,15 +83,34 @@
             <button data-x="txt" class="btn-outline">TXT</button>
           </div>
         </div>
-        <textarea id="ed" placeholder="Import a file or start typing. Use --- for new PPTX slides."></textarea>
+        
+        <div class="editor-container">
+          <div class="toolbar">
+            <button data-cmd="bold"><b>B</b></button>
+            <button data-cmd="italic"><i>I</i></button>
+            <button data-cmd="underline"><u>U</u></button>
+            <div class="divider"></div>
+            <button data-cmd="formatBlock" data-val="<h1>">H1</button>
+            <button data-cmd="formatBlock" data-val="<h2>">H2</button>
+            <button data-cmd="formatBlock" data-val="<p>">P</button>
+            <div class="divider"></div>
+            <button data-cmd="insertUnorderedList">List</button>
+            <button data-cmd="insertHorizontalRule">Slide Break</button>
+          </div>
+          <div class="editor-page-wrap">
+            <div id="ed" class="editor-page" contenteditable="true" placeholder="Start typing your assignment here..."></div>
+          </div>
+        </div>
+        
         <div class="row mt-2">
-          <input id="q" placeholder="Ask the AI about this document..." style="flex:1">
-          <button id="ask" class="btn-primary">Ask</button>
+          <input id="q" placeholder="Ask the AI to edit or continue this document..." style="flex:1">
+          <button id="ask" class="btn-primary">Ask AI</button>
           <button id="ins" class="btn-outline">Insert Reply</button>
         </div>
-        <pre id="out" class="output-box"></pre>
+        <pre id="out" class="output-box" hidden></pre>
       </section>
 
+      <!-- MATH -->
       <section id="math" hidden>
         <div class="page-header">
           <h2>Math Check</h2>
