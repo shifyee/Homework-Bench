@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#14213d">
+<meta name="description" content="Offline homework bench: documents, local AI tutor and math grading, photo editor, grade charts.">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>Offline Homework</title></head>
+<body>
+<header><h1>Homework Bench</h1>
+  <select id="model" aria-label="AI model"><option value="">Detecting GPU…</option></select>
+  <button id="load">Load AI</button><button id="unload" hidden>Unload AI</button>
+  <progress id="prog" max="1" value="0" hidden></progress>
+  <span id="st" class="dim" role="status" aria-live="polite"></span></header>
+<nav><button data-t="docs" class="on">Documents</button><button data-t="math">Math check</button><button data-t="photo">Photos</button><button data-t="grades">Grades</button></nav>
+<main>
+<section id="docs">
+  <div class="row"><input type="file" id="imp" accept=".pdf,.docx,.pptx,.txt,.md,.csv">
+    <span class="dim">Export:</span><button data-x="pdf">PDF</button><button data-x="pptx">PPTX</button><button data-x="doc">Word</button><button data-x="txt">TXT</button></div>
+  <textarea id="ed" placeholder="Import a file or start typing. Put --- on its own line to start a new slide when exporting PPTX."></textarea>
+  <div class="row"><input id="q" placeholder="Ask the AI about this document (uses your selection, or the start)"><button id="ask">Ask</button><button id="ins">Insert reply</button></div>
+  <pre id="out"></pre>
+</section>
+<section id="math" hidden>
+  <div class="row"><span class="dim">Paste a DeltaMath problem, or import a PDF/Word file:</span><input type="file" id="mimp" accept=".pdf,.docx,.pptx,.txt"></div>
+  <textarea id="mp" placeholder="Problem"></textarea>
+  <textarea id="mw" placeholder="Your work and final answer"></textarea>
+  <div class="row"><button id="grade">Grade my work</button><button id="hint">Hint</button><button id="solve">Solve it</button><button id="stop">Stop</button><button id="mins">Insert reply</button></div>
+  <pre id="mo"></pre>
+</section>
+<section id="photo" hidden></section>
+<section id="grades" hidden></section>
+</main>
+<script type="module" src="/src/main.js"></script>
+</body></html>
