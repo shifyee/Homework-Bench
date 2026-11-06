@@ -1,34 +1,121 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#14213d">
-<meta name="description" content="Offline homework bench: documents, local AI tutor and math grading, photo editor, grade charts.">
-<link rel="icon" href="/icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="/icon.svg">
-<title>Offline Homework</title></head>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="Offline homework bench.">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <title>Homework Bench</title>
+</head>
 <body>
-<header><h1>Homework Bench</h1>
-  <select id="model" aria-label="AI model"><option value="">Detecting GPU…</option></select>
-  <button id="load">Load AI</button><button id="unload" hidden>Unload AI</button>
-  <progress id="prog" max="1" value="0" hidden></progress>
-  <span id="st" class="dim" role="status" aria-live="polite"></span></header>
-<nav><button data-t="docs" class="on">Documents</button><button data-t="math">Math check</button><button data-t="photo">Photos</button><button data-t="grades">Grades</button></nav>
-<main>
-<section id="docs">
-  <div class="row"><input type="file" id="imp" accept=".pdf,.docx,.pptx,.txt,.md,.csv">
-    <span class="dim">Export:</span><button data-x="pdf">PDF</button><button data-x="pptx">PPTX</button><button data-x="doc">Word</button><button data-x="txt">TXT</button></div>
-  <textarea id="ed" placeholder="Import a file or start typing. Put --- on its own line to start a new slide when exporting PPTX."></textarea>
-  <div class="row"><input id="q" placeholder="Ask the AI about this document (uses your selection, or the start)"><button id="ask">Ask</button><button id="ins">Insert reply</button></div>
-  <pre id="out"></pre>
-</section>
-<section id="math" hidden>
-  <div class="row"><span class="dim">Paste a DeltaMath problem, or import a PDF/Word file:</span><input type="file" id="mimp" accept=".pdf,.docx,.pptx,.txt"></div>
-  <textarea id="mp" placeholder="Problem"></textarea>
-  <textarea id="mw" placeholder="Your work and final answer"></textarea>
-  <div class="row"><button id="grade">Grade my work</button><button id="hint">Hint</button><button id="solve">Solve it</button><button id="stop">Stop</button><button id="mins">Insert reply</button></div>
-  <pre id="mo"></pre>
-</section>
-<section id="photo" hidden></section>
-<section id="grades" hidden></section>
-</main>
-<script type="module" src="/src/main.js"></script>
-</body></html>
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">H</div>
+        <span>Homework Bench</span>
+      </div>
+      
+      <nav class="nav-menu">
+        <button data-t="chat" class="nav-item active">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+          AI Tutor
+        </button>
+        <button data-t="docs" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          Documents
+        </button>
+        <button data-t="math" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          Math Check
+        </button>
+        <button data-t="photo" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg>
+          Photos
+        </button>
+        <button data-t="grades" class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          Grades
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="ai-controls">
+          <label>AI Engine</label>
+          <select id="model" aria-label="AI model"><option value="">Detecting GPU…</option></select>
+          <div class="ai-buttons">
+            <button id="load" class="btn-primary">Load AI</button>
+            <button id="unload" hidden class="btn-outline">Unload</button>
+          </div>
+          <div id="prog-wrap" hidden>
+            <progress id="prog" max="1" value="0"></progress>
+          </div>
+          <div id="st" class="status-text" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <section id="chat">
+        <div class="chat-container">
+          <div class="chat-history" id="chat-history"></div>
+          <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="Ask anything... (Shift+Enter for new line)"></textarea>
+            <button id="chat-send" class="btn-primary">Send</button>
+            <button id="chat-stop" class="btn-danger" hidden>Stop</button>
+          </div>
+        </div>
+      </section>
+
+      <section id="docs" hidden>
+        <div class="page-header">
+          <h2>Documents</h2>
+          <div class="row">
+            <input type="file" id="imp" accept=".pdf,.docx,.pptx,.txt,.md,.csv" class="file-input">
+            <div class="divider"></div>
+            <span class="muted">Export:</span>
+            <button data-x="pdf" class="btn-outline">PDF</button>
+            <button data-x="pptx" class="btn-outline">PPTX</button>
+            <button data-x="doc" class="btn-outline">Word</button>
+            <button data-x="txt" class="btn-outline">TXT</button>
+          </div>
+        </div>
+        <textarea id="ed" placeholder="Import a file or start typing. Use --- for new PPTX slides."></textarea>
+        <div class="row mt-2">
+          <input id="q" placeholder="Ask the AI about this document..." style="flex:1">
+          <button id="ask" class="btn-primary">Ask</button>
+          <button id="ins" class="btn-outline">Insert Reply</button>
+        </div>
+        <pre id="out" class="output-box"></pre>
+      </section>
+
+      <section id="math" hidden>
+        <div class="page-header">
+          <h2>Math Check</h2>
+          <div class="row">
+            <input type="file" id="mimp" accept=".pdf,.docx,.pptx,.txt" class="file-input">
+          </div>
+        </div>
+        <div class="split-pane">
+          <textarea id="mp" placeholder="Problem"></textarea>
+          <textarea id="mw" placeholder="Your work and final answer"></textarea>
+        </div>
+        <div class="row mt-2">
+          <button id="grade" class="btn-primary">Grade my work</button>
+          <button id="hint" class="btn-outline">Hint</button>
+          <button id="solve" class="btn-outline">Solve it</button>
+          <button id="stop-math" class="btn-danger">Stop</button>
+          <button id="mins" class="btn-outline">Insert Reply</button>
+        </div>
+        <pre id="mo" class="output-box"></pre>
+      </section>
+
+      <section id="photo" hidden></section>
+      <section id="grades" hidden></section>
+    </main>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
