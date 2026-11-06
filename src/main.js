@@ -10,31 +10,25 @@ registerSW({immediate:true});
 
 const $=s=>document.querySelector(s),all=s=>document.querySelectorAll(s),st=t=>$('#st').textContent=t;
 
-// Navigation
+// Navigation & Tab Routing
 all('nav button').forEach(b=>b.onclick=()=>{
   all('nav button').forEach(x=>x.classList.toggle('active',x===b));
   all('main section').forEach(s=>s.hidden=s.id!==b.dataset.t);
 });
 
-// Setup AI Models
+// Setup AI
 (async()=>{
   let list=null;
-  try{list=await ai.models()}catch(e){console.warn('GPU probe failed:',e)}
+  try{list=await ai.models()}catch(e){console.warn(e)}
   if(!list){
-    st('No WebGPU. AI features disabled.');$('#load').disabled=true;
+    st('No WebGPU. AI disabled.');$('#load').disabled=true;
     $('#model').innerHTML='<option>AI not available</option>';return;
   }
-  if(!list.length){
-    st('No models found.');$('#load').disabled=true;return;
-  }
-  
-  // Group by warning size
   list.forEach(m=>{
     const size=(m.vram_required_MB||0)/1024;
     const warn=size>4?' (⚠️ Heavy)':'';
     $('#model').add(new Option(`${m.model_id.replace('-MLC','')} · ${size.toFixed(1)}GB${warn}`,m.model_id));
   });
-  
   const saved=await kv.get('model');
   $('#model').value=list.some(m=>m.model_id===saved)?saved:(list.find(m=>/qwen2.5-1.5b/i.test(m.model_id))||list[0]).model_id;
 })();
@@ -49,9 +43,7 @@ $('#load').onclick=async()=>{
     });
     await kv.set('model',id);
     st('AI Ready'); $('#unload').hidden=false;
-  }catch(e){
-    st('Load failed: '+(e?.message||e));
-  }
+  }catch(e){ st('Load failed: '+(e?.message||e)); }
   $('#prog-wrap').hidden=true;$('#load').disabled=false;
 };
 
@@ -60,43 +52,56 @@ $('#unload').onclick=async()=>{
   $('#unload').hidden=true;$('#unload').disabled=false; st('Unloaded');
 };
 
-// Documents
+// Documents & Rich Text Editor
 const ed=$('#ed');let tm,last='';
-kv.get('doc').then(v=>{if(typeof v==='string')ed.value=v});
-ed.oninput=()=>{clearTimeout(tm);tm=setTimeout(()=>kv.set('doc',ed.value),400)};
+kv.get('doc').then(v=>{if(typeof v==='string')ed.innerHTML=v});
+ed.oninput=()=>{clearTimeout(tm);tm=setTimeout(()=>kv.set('doc',ed.innerHTML),400)};
+
+// Toolbar commands
+all('[data-cmd]').forEach(btn=>btn.onclick=()=>{
+  const cmd=btn.dataset.cmd;
+  if(cmd==='formatBlock') document.execCommand(cmd,false,btn.dataset.val);
+  else document.execCommand(cmd,false,null);
+  ed.focus();
+});
 
 const imp=(input,set)=>input.onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
   st('Reading '+f.name+'…');
-  try{set(await importFile(f));st('')}
-  catch(x){st('Error: '+(x?.message||x))}
+  try{set(await importFile(f));st('')} catch(x){st('Error: '+(x?.message||x))}
   e.target.value='';
 };
-imp($('#imp'),t=>{ed.value=t;kv.set('doc',t)});
+
+imp($('#imp'),html=>{
+  // Import plain text and wrap in paragraphs for the rich editor
+  const text=html.replace(/</g,'&lt;').replace(/>/g,'&gt;').split('\n\n').map(p=>`<p>${p.replace(/\n/g,'<br>')}</p>`).join('');
+  ed.innerHTML=text; kv.set('doc',text);
+});
 imp($('#mimp'),t=>{mp.value=t.slice(0,4000);saveMath()});
 
 all('[data-x]').forEach(b=>b.onclick=async()=>{
   const fn={pdf:exportPDF,pptx:exportPPTX,doc:exportDOC,txt:exportTXT}[b.dataset.x];
   st('Exporting…');
-  try{await fn(ed.value,'homework');st('Exported')}
-  catch(e){st('Export failed')}
+  try{await fn(ed.innerHTML,'homework');st('Exported')} catch(e){st('Export failed')}
 });
 
 $('#ask').onclick=async()=>{
-  if(!ai.ready()) { $('#out').textContent='Load AI first.'; return; }
-  const sel=ed.value.slice(ed.selectionStart,ed.selectionEnd)||ed.value;
-  $('#out').textContent='Thinking...';
+  if(!ai.ready()) { $('#out').hidden=false; $('#out').textContent='Load AI first.'; return; }
+  // Use selection or whole doc text
+  const sel=window.getSelection().toString()||ed.innerText;
+  $('#out').hidden=false; $('#out').textContent='Thinking...';
   let t='';
   try{
     for await(const c of ai.stream([
-      {role:'system',content:'You are a homework helper. Be concise.'},
-      {role:'user',content:`Document:\n${sel.slice(0,2500)}\n\nQuestion: ${$('#q').value}`}
+      {role:'system',content:'You are an AI document assistant. Help edit, rewrite, or answer questions based on the provided HTML document. Output only the requested text.'},
+      {role:'user',content:`Document Context:\n${sel.slice(0,3000)}\n\nInstruction: ${$('#q').value}`}
     ])){t+=c;$('#out').textContent=t}
   }catch(e){$('#out').textContent='Error: '+e.message}
 };
 $('#ins').onclick=()=>{
   if(!$('#out').textContent)return;
-  ed.setRangeText('\n'+$('#out').textContent+'\n',ed.selectionEnd,ed.selectionEnd,'end');
+  const html=`<p>${$('#out').textContent.replace(/\n/g,'<br>')}</p>`;
+  document.execCommand('insertHTML',false,html);
   ed.dispatchEvent(new Event('input'));ed.focus();
 };
 
@@ -115,9 +120,9 @@ const mrun=async(sys,tail)=>{
     for await(const c of ai.stream([
       {role:'system',content:sys},
       {role:'user',content:`Problem:\n${mp.value.slice(0,1200)}\n\nWork:\n${mw.value.slice(0,1200)}\n\n${tail}`}
-    ])){t+=c;mo.textContent=clean(t)}
+    ])){t+=c;mo.textContent=t}
   }catch(e){mo.textContent='Error: '+e.message}
-  mlast=clean(t);
+  mlast=t;
 };
 
 $('#grade').onclick=()=>mrun('Strict math teacher. Do not show reasoning. Reply with: VERDICT, first wrong step, correct answer.','Grade this.');
@@ -134,11 +139,3 @@ $('#mins').onclick=()=>{
 mountChat($('#chat'));
 mountPhoto($('#photo'));
 mountGrades($('#grades')).catch(e=>console.error(e));
-
-// Re-route clean function for Math/Ask to share
-const clean=t=>{
-  let s=String(t).replace(/<think(?:ing)?>[\s\S]*?<\/think(?:ing)?>/gi,'');
-  s=s.replace(/^[\s\S]*<\/think(?:ing)?>/i,'');
-  s=s.replace(/<think(?:ing)?>[\s\S]*$/i,'(thinking…)');
-  return s.trim();
-};
